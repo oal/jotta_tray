@@ -32,15 +32,17 @@ class TrayWidget:
         "offline": "jotta-offline",
     }
 
-    def __init__(self, cli: CLIInterface, icon_path: Optional[Path] = None):
+    def __init__(self, cli: CLIInterface, monitor: 'StatusMonitor', icon_path: Optional[Path] = None):
         """
         Initialize tray widget.
 
         Args:
             cli: CLIInterface instance for executing commands
+            monitor: StatusMonitor instance for triggering updates
             icon_path: Path to icon directory (default: auto-detect)
         """
         self.cli = cli
+        self.monitor = monitor
         self.icon_path = icon_path or self._find_icon_path()
 
         # State
@@ -276,7 +278,17 @@ class TrayWidget:
             else:
                 self.cli.run_pause()
                 logger.info("Pause requested")
+
+            # Trigger immediate status update for instant UI feedback
+            self.monitor.force_update()
+
         except JottaCLIError as e:
+            error_msg = str(e).lower()
+            # Ignore benign errors (already in desired state)
+            if "already paused" in error_msg or "already running" in error_msg:
+                logger.debug(f"Ignoring benign error: {e}")
+                return
+            # Show dialog for genuine errors
             logger.error(f"Pause/Resume failed: {e}")
             self._show_error_dialog("Action Failed", str(e))
 

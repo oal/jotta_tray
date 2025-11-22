@@ -58,6 +58,7 @@ class StatusMonitor:
 
         # Adaptive polling
         self._current_interval = self.IDLE_INTERVAL
+        self._wake_event = threading.Event()  # Event for immediate wake-up
 
     def add_callback(self, callback: Callable[[SyncStatus], None]) -> None:
         """
@@ -102,6 +103,20 @@ class StatusMonitor:
         """
         return self._last_status
 
+    def force_update(self) -> None:
+        """
+        Trigger an immediate status check, bypassing the polling interval.
+
+        This wakes up the monitor thread immediately, providing instant
+        UI feedback after user actions (pause/resume).
+        """
+        if not self._running:
+            logger.warning("Cannot force update: monitor not running")
+            return
+
+        logger.debug("Forcing immediate status update (waking thread)")
+        self._wake_event.set()
+
     def _monitor_loop(self) -> None:
         """Main monitoring loop (runs in background thread)."""
         logger.debug("Monitor loop started")
@@ -133,8 +148,9 @@ class StatusMonitor:
             except Exception as e:
                 logger.error(f"Error in monitor loop: {e}")
 
-            # Sleep until next check
-            time.sleep(self._current_interval)
+            # Sleep until next check (can be interrupted by force_update)
+            self._wake_event.wait(timeout=self._current_interval)
+            self._wake_event.clear()  # Reset for next iteration
 
         logger.debug("Monitor loop exited")
 
@@ -213,11 +229,11 @@ class StatusMonitor:
         Returns:
             State string: "idle", "syncing", "paused", "error", "offline"
         """
-        # Check if sync is enabled
+        # Check if sync is paused
         sync_data = status_data.get("Sync", {})
-        sync_enabled = sync_data.get("Enabled", True)
+        is_paused = sync_data.get("Paused", False)
 
-        if not sync_enabled:
+        if is_paused:
             return "paused"
 
         # Check transfer state

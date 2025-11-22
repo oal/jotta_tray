@@ -115,9 +115,12 @@ class CLIInterface:
         except subprocess.TimeoutExpired:
             raise JottaCLIError("Status command timed out - daemon may be unresponsive")
 
-    def run_pause(self) -> bool:
+    def run_pause(self, duration: str = "8h") -> bool:
         """
         Execute 'jotta-cli pause' to pause backup/sync.
+
+        Args:
+            duration: How long to pause (e.g., "8h", "1h", "30m"). Default: "8h"
 
         Returns:
             True if successful
@@ -126,7 +129,7 @@ class CLIInterface:
             JottaCLIError: If pause command fails
         """
         try:
-            result = self._run_command(["pause"])
+            result = self._run_command(["pause", duration])
 
             if result.returncode != 0:
                 raise JottaCLIError(f"Pause failed: {result.stderr.strip()}")

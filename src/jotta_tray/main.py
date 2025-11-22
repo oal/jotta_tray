@@ -48,7 +48,7 @@ class JottaTrayApp:
         # Initialize components
         self.cli = CLIInterface()
         self.monitor = StatusMonitor(self.cli)
-        self.tray = TrayWidget(self.cli)
+        self.tray = TrayWidget(self.cli, self.monitor)
 
         # Register signal handlers for clean shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
