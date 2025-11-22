@@ -1,0 +1,179 @@
+# Jotta Cloud System Tray Widget
+
+A lightweight system tray widget for Linux that provides at-a-glance monitoring of Jotta Cloud sync status, storage usage, and quick access to common actions.
+
+## Features
+
+- 🔄 Real-time sync status monitoring
+- 💾 Storage quota display
+- 🚀 Quick actions menu (pause/resume, open web, view logs)
+- 🔔 Desktop notifications for important events
+- 🖥️ Works with GNOME, KDE, XFCE, and other desktop environments
+
+## System Requirements
+
+- **Operating System:** Linux (tested on Ubuntu 22.04+, Fedora 38+, Arch Linux)
+- **Python:** 3.10 or higher
+- **Desktop Environment:** GTK3-based (GNOME, XFCE) or Qt-based (KDE Plasma)
+- **Dependencies:**
+  - PyGObject (Python GTK bindings)
+  - GTK3
+  - AppIndicator3 (for GNOME/Unity) or GtkStatusIcon fallback
+- **Required Software:** `jotta-cli` (Jotta Cloud command-line tool) must be installed and configured
+
+## Installation
+
+### Prerequisites
+
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management. Install it first:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### Option 1: Install from source (uv - recommended)
+
+```bash
+# Clone or download this repository
+
+# Install in development mode with dev dependencies
+uv sync --dev
+
+# Or install in production mode
+uv sync
+```
+
+### Option 2: Install with pip
+
+```bash
+# Install in development mode
+uv pip install -e .
+
+# Or install normally
+uv pip install .
+```
+
+### Option 3: Manual system dependencies
+
+```bash
+# Install system GTK dependencies first
+sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-appindicator3-0.1  # Ubuntu/Debian
+# or
+sudo dnf install python3-gobject gtk3 libappindicator-gtk3  # Fedora
+# or
+sudo pacman -S python-gobject gtk3 libappindicator-gtk3  # Arch Linux
+
+# Then install Python package with uv
+uv sync
+```
+
+## Usage
+
+### Start the widget
+
+```bash
+jotta-tray
+```
+
+The widget will appear in your system tray with an icon indicating the current sync status.
+
+### Icon States
+
+- **Idle (cloud):** All files synced, no active transfers
+- **Syncing (arrows):** Active upload or download in progress
+- **Paused (pause):** Sync manually paused
+- **Error (warning):** Sync error detected
+- **Offline (gray):** Jotta daemon not running
+
+### Context Menu Actions
+
+Right-click the tray icon to access:
+
+- **Storage info:** Current usage and quota
+- **Pause/Resume Backup:** Temporarily stop or restart syncing
+- **Open Jottacloud Web:** Launch web interface in browser
+- **View Logs:** Open log file in text editor
+- **About:** Version and credits
+- **Quit:** Close the tray widget
+
+## Configuration
+
+Configuration file location: `~/.config/jotta-tray/config.ini`
+
+A default configuration file will be created on first run. You can customize:
+
+- Polling intervals
+- Notification preferences
+- Icon theme
+- Menu options
+
+(Full configuration documentation coming soon)
+
+## Development
+
+### Running from source
+
+```bash
+# Using uv
+uv run python -m jotta_tray.main
+
+# Or activate the virtual environment first
+source .venv/bin/activate
+python -m jotta_tray.main
+```
+
+### Running tests
+
+```bash
+# Using uv
+uv run pytest tests/
+
+# Or with activated virtual environment
+pytest tests/
+```
+
+## Troubleshooting
+
+### Widget doesn't appear in system tray
+
+- **GNOME:** Ensure AppIndicator extension is installed
+- **KDE:** Check system tray settings allow new icons
+- **XFCE:** Verify "Notification Area" panel plugin is active
+
+### "Jotta daemon not running" error
+
+```bash
+# Check if jottad is running
+jotta-cli status
+
+# Start the daemon if needed
+sudo systemctl start jottad  # systemd
+```
+
+### Icon not changing/updating
+
+- Check that `jotta-cli status --json` returns valid output
+- Review logs: `~/.local/share/jotta-tray/app.log`
+
+## Uninstallation
+
+```bash
+# Remove package
+uv pip uninstall jotta-tray
+
+# Remove configuration and data
+rm -rf ~/.config/jotta-tray ~/.local/share/jotta-tray
+
+# Remove autostart entry (if enabled)
+rm ~/.config/autostart/jotta-tray.desktop
+```
+
+## License
+
+MIT License (see LICENSE file)
+
+## Credits
+
+Created for Jotta Cloud users who want seamless desktop integration on Linux.
+
+Built with PyGObject and GTK3.
