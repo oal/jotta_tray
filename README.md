@@ -18,7 +18,7 @@ A lightweight system tray widget for Linux that provides at-a-glance monitoring 
 - **Dependencies:**
   - PyGObject (Python GTK bindings)
   - GTK3
-  - AppIndicator3 (for GNOME/Unity) or GtkStatusIcon fallback
+  - AppIndicator3
 - **Required Software:** `jotta-cli` (Jotta Cloud command-line tool) must be installed and configured
 
 ## Installation
@@ -57,11 +57,11 @@ uv pip install .
 
 ```bash
 # Install system GTK dependencies first
-sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-appindicator3-0.1  # Ubuntu/Debian
+sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-appindicator3-0.1  # Ubuntu/Debian
 # or
 sudo dnf install python3-gobject gtk3 libappindicator-gtk3  # Fedora
 # or
-sudo pacman -S python-gobject gtk3 libappindicator-gtk3  # Arch Linux
+sudo pacman -S python-gobject gtk3 libappindicator  # Arch Linux
 
 # Then install Python package with uv
 uv sync

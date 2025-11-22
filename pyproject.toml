@@ -26,7 +26,6 @@ classifiers = [
 ]
 dependencies = [
     "PyGObject>=3.40.0",
-    "pydbus>=0.6.0",
 ]
 
 [project.optional-dependencies]
