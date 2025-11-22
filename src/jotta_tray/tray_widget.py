@@ -281,7 +281,7 @@ class TrayWidget:
 
     def _on_open_web(self, menuitem):
         """Handle open web menu action."""
-        url = "https://www.jottacloud.com"
+        url = "https://jottacloud.com/web"
         try:
             webbrowser.open(url)
             logger.info(f"Opened web browser: {url}")
@@ -362,10 +362,21 @@ quota_warning_threshold = 90
     def _on_about(self, menuitem):
         """Handle about menu action."""
         dialog = Gtk.AboutDialog()
-        dialog.set_program_name("Jotta Cloud Tray")
+        dialog.set_program_name("Jottacloud Tray")
         dialog.set_version("0.1.0")
         dialog.set_comments("System tray widget for Jotta Cloud sync monitoring")
-        dialog.set_website("https://www.jottacloud.com")
+        dialog.set_website("https://github.com/oal/jotta_tray")
+
+        # Load and set logo
+        try:
+            from gi.repository import GdkPixbuf
+            logo_path = self.icon_path / "jotta-idle.svg"
+            if logo_path.exists():
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(str(logo_path), 64, 64)
+                dialog.set_logo(pixbuf)
+        except Exception as e:
+            logger.warning(f"Failed to load logo for about dialog: {e}")
+
         dialog.run()
         dialog.destroy()
 
