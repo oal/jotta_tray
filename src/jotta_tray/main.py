@@ -14,6 +14,7 @@ from gi.repository import Gtk, GLib
 from .cli_interface import CLIInterface, CLINotFoundError
 from .status_monitor import StatusMonitor
 from .tray_widget import TrayWidget
+from . import autostart
 
 # Configure logging
 logging.basicConfig(
@@ -142,8 +143,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  jotta-tray              # Start with default settings
-  jotta-tray --debug      # Start with debug logging
+  jotta-tray                      # Start with default settings
+  jotta-tray --debug              # Start with debug logging
+  jotta-tray --install-autostart  # Enable autostart at login
+  jotta-tray --check-autostart    # Check if autostart is enabled
 
 For more information, visit: https://www.jottacloud.com
         """
@@ -161,7 +164,40 @@ For more information, visit: https://www.jottacloud.com
         version="%(prog)s 0.1.0"
     )
 
+    # Autostart management commands
+    autostart_group = parser.add_argument_group("autostart management")
+    autostart_group.add_argument(
+        "--install-autostart",
+        action="store_true",
+        help="Install autostart desktop file and exit"
+    )
+    autostart_group.add_argument(
+        "--uninstall-autostart",
+        action="store_true",
+        help="Remove autostart desktop file and exit"
+    )
+    autostart_group.add_argument(
+        "--check-autostart",
+        action="store_true",
+        help="Check autostart status and exit"
+    )
+
     args = parser.parse_args()
+
+    # Handle autostart commands (these exit after execution)
+    if args.install_autostart:
+        success, message = autostart.install_autostart()
+        print(message)
+        sys.exit(0 if success else 1)
+
+    if args.uninstall_autostart:
+        success, message = autostart.uninstall_autostart()
+        print(message)
+        sys.exit(0 if success else 1)
+
+    if args.check_autostart:
+        print(autostart.get_autostart_status())
+        sys.exit(0)
 
     # Create and run app
     try:

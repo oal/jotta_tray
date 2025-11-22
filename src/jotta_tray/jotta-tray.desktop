@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Jotta Cloud Tray
+Comment=System tray widget for Jotta Cloud sync monitoring
+Exec=jotta-tray
+Icon=jotta-cloud
+Terminal=false
+Categories=Utility;System;
+X-GNOME-Autostart-enabled=true
+StartupNotify=false

@@ -93,8 +93,34 @@ Right-click the tray icon to access:
 - **Pause/Resume Backup:** Temporarily stop or restart syncing
 - **Open Jottacloud Web:** Launch web interface in browser
 - **View Logs:** Open log file in text editor
+- **Settings:** Configure autostart and other preferences
 - **About:** Version and credits
 - **Quit:** Close the tray widget
+
+### Autostart on Login
+
+You can configure jotta-tray to start automatically when you log in using either the GUI or command line:
+
+#### Using the GUI (Recommended)
+
+1. Right-click the tray icon and select **Settings**
+2. Check the **"Start automatically at login"** checkbox
+3. Click **Save**
+
+#### Using Command Line
+
+```bash
+# Enable autostart
+jotta-tray --install-autostart
+
+# Disable autostart
+jotta-tray --uninstall-autostart
+
+# Check autostart status
+jotta-tray --check-autostart
+```
+
+The autostart feature uses XDG autostart standards (`~/.config/autostart/jotta-tray.desktop`), which is compatible with all major Linux desktop environments including GNOME, KDE, XFCE, Sway, Hyprland, and others.
 
 ## Configuration
 

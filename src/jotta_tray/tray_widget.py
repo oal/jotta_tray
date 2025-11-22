@@ -15,6 +15,7 @@ from gi.repository import Gtk, GLib, AppIndicator3
 from .status_monitor import SyncStatus
 from .cli_interface import CLIInterface, JottaCLIError
 from .utils import format_quota, format_file_count
+from . import autostart
 
 logger = logging.getLogger(__name__)
 
@@ -305,6 +306,69 @@ class TrayWidget:
 
     def _on_settings(self, menuitem):
         """Handle settings menu action."""
+        self._show_settings_dialog()
+
+    def _show_settings_dialog(self):
+        """Show settings dialog with autostart checkbox and other options."""
+        # Create dialog
+        dialog = Gtk.Dialog(
+            title="Jotta Tray Settings",
+            parent=None,
+            flags=0
+        )
+        dialog.set_default_size(400, 200)
+
+        # Add buttons
+        dialog.add_button("Cancel", Gtk.ResponseType.CANCEL)
+        dialog.add_button("Save", Gtk.ResponseType.OK)
+
+        # Get content area
+        content_area = dialog.get_content_area()
+        content_area.set_spacing(12)
+        content_area.set_border_width(12)
+
+        # Create autostart checkbox
+        autostart_check = Gtk.CheckButton(label="Start automatically at login")
+        autostart_check.set_active(autostart.is_autostart_enabled())
+        content_area.pack_start(autostart_check, False, False, 0)
+
+        # Add separator
+        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        content_area.pack_start(separator, False, False, 6)
+
+        # Add button to open config file
+        config_button = Gtk.Button(label="Open configuration file")
+        config_button.connect("clicked", self._on_open_config_file)
+        content_area.pack_start(config_button, False, False, 0)
+
+        # Show all widgets
+        content_area.show_all()
+
+        # Run dialog
+        response = dialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            # Save autostart setting
+            new_autostart_state = autostart_check.get_active()
+            current_state = autostart.is_autostart_enabled()
+
+            if new_autostart_state != current_state:
+                if new_autostart_state:
+                    success, message = autostart.install_autostart()
+                else:
+                    success, message = autostart.uninstall_autostart()
+
+                if success:
+                    logger.info(f"Autostart setting changed: {new_autostart_state}")
+                    self._show_info_dialog("Settings Saved", message)
+                else:
+                    logger.error(f"Failed to change autostart: {message}")
+                    self._show_error_dialog("Error", message)
+
+        dialog.destroy()
+
+    def _on_open_config_file(self, button):
+        """Open the configuration file in the default text editor."""
         try:
             # Configuration file path
             config_dir = Path.home() / ".config" / "jotta-tray"
@@ -318,10 +382,6 @@ class TrayWidget:
                 config_file.write_text("""# Jotta Tray Configuration
 #
 # This file controls the behavior of the Jotta Cloud system tray widget.
-
-[general]
-# Auto-start the tray widget on login (true/false)
-autostart = true
 
 [monitoring]
 # Status polling interval in seconds when idle
@@ -356,8 +416,8 @@ quota_warning_threshold = 90
             logger.info(f"Opened config file: {config_file}")
 
         except Exception as e:
-            logger.error(f"Failed to open settings: {e}")
-            self._show_error_dialog("Error", f"Failed to open settings: {e}")
+            logger.error(f"Failed to open config file: {e}")
+            self._show_error_dialog("Error", f"Failed to open configuration file: {e}")
 
     def _on_about(self, menuitem):
         """Handle about menu action."""
@@ -391,6 +451,19 @@ quota_warning_threshold = 90
             parent=None,
             flags=0,
             message_type=Gtk.MessageType.ERROR,
+            buttons=Gtk.ButtonsType.OK,
+            text=title
+        )
+        dialog.format_secondary_text(message)
+        dialog.run()
+        dialog.destroy()
+
+    def _show_info_dialog(self, title: str, message: str) -> None:
+        """Show info message dialog."""
+        dialog = Gtk.MessageDialog(
+            parent=None,
+            flags=0,
+            message_type=Gtk.MessageType.INFO,
             buttons=Gtk.ButtonsType.OK,
             text=title
         )

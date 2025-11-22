@@ -46,3 +46,4 @@ packages = ["src/jotta_tray"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/jotta_tray/icons" = "jotta_tray/icons"
+"src/jotta_tray/jotta-tray.desktop" = "jotta_tray/jotta-tray.desktop"
