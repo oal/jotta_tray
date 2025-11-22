@@ -1,0 +1,119 @@
+app-id: io.github.oal.jotta_tray
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: jotta-tray
+
+finish-args:
+  # X11 + Wayland access
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+
+  # System tray / AppIndicator access
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --own-name=org.kde.StatusNotifierItem-*
+  - --talk-name=com.canonical.indicator.application
+  - --talk-name=org.ayatana.indicator.application
+
+  # DBus access for desktop integration
+  - --socket=session-bus
+  - --system-talk-name=org.freedesktop.Notifications
+
+  # File system access
+  - --filesystem=xdg-config/jotta-tray:create
+  - --filesystem=xdg-data/jotta-tray:create
+  - --filesystem=xdg-cache/jotta-tray:create
+  - --filesystem=xdg-run/jotta-tray:create
+
+  # Access to jotta-cli home directory
+  - --filesystem=~/.jottad:ro
+  - --filesystem=~/.config/jotta-cli:ro
+
+  # Network access (for checking sync status)
+  - --share=network
+
+modules:
+  # libappindicator-gtk3 module
+  - name: libappindicator-gtk3
+    buildsystem: autotools
+    config-opts:
+      - --disable-static
+      - --with-gtk=3
+      - --disable-gtk-doc
+    sources:
+      - type: archive
+        url: https://launchpad.net/libappindicator/12.10/12.10.0/+download/libappindicator-12.10.0.tar.gz
+        sha256: d5907c1f98084acf28fd19593cb70672caa0ca1cf82d747ba6f4830d4cc3b49f
+    modules:
+      - name: libindicator
+        buildsystem: autotools
+        config-opts:
+          - --disable-static
+          - --with-gtk=3
+        sources:
+          - type: archive
+            url: https://launchpad.net/libindicator/12.10/12.10.1/+download/libindicator-12.10.1.tar.gz
+            sha256: b2d2e44c10313d5c9cd60db455d520f80b36dc39562df079a3f29495e8f9447f
+      - name: libdbusmenu
+        buildsystem: autotools
+        config-opts:
+          - --disable-static
+          - --with-gtk=3
+          - --disable-dumper
+          - --disable-tests
+        sources:
+          - type: archive
+            url: https://launchpad.net/libdbusmenu/16.04/16.04.0/+download/libdbusmenu-16.04.0.tar.gz
+            sha256: b9cc4a2acd74509435892823607d966d424bd9ad5d0b00938f27240a1bfa878a
+
+  # Python dependencies
+  - name: python3-pygobject
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} "pygobject>=3.40.0" --no-build-isolation
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/source/P/PyGObject/pygobject-3.48.2.tar.gz
+        sha256: 4b32ce6e0d6f64c2716fc9d56f5234f3f46bc4be7e1d5a77c7b5e32d83fcb126
+        x-checker-data:
+          type: pypi
+          name: PyGObject
+
+  # Main application
+  - name: jotta-tray
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} . --no-build-isolation
+    sources:
+      - type: archive
+        url: https://files.pythonhosted.org/packages/source/j/jotta-tray/jotta-tray-0.1.0.tar.gz
+        sha256: SKIP  # Will be updated by automated workflow
+        x-checker-data:
+          type: pypi
+          name: jotta-tray
+      - type: file
+        url: https://files.pythonhosted.org/packages/source/h/hatchling/hatchling-1.25.0.tar.gz
+        sha256: 7064631a512610b52250a4d3ff1bd81551d6d1431c4eb7b72e734df6c74f4262
+
+  # Desktop file and metadata
+  - name: metadata
+    buildsystem: simple
+    build-commands:
+      # Install desktop file
+      - install -Dm644 jotta-tray.desktop ${FLATPAK_DEST}/share/applications/${FLATPAK_ID}.desktop
+
+      # Install icon (using one of the existing SVG icons)
+      - install -Dm644 jotta-idle.svg ${FLATPAK_DEST}/share/icons/hicolor/scalable/apps/${FLATPAK_ID}.svg
+
+      # Install appstream metadata
+      - install -Dm644 ${FLATPAK_ID}.metainfo.xml ${FLATPAK_DEST}/share/metainfo/${FLATPAK_ID}.metainfo.xml
+    sources:
+      - type: file
+        path: ../../src/jotta_tray/jotta-tray.desktop
+      - type: file
+        path: ../../src/jotta_tray/icons/jotta-idle.svg
+      - type: file
+        path: io.github.oal.jotta_tray.metainfo.xml

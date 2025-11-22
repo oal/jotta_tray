@@ -1,0 +1,68 @@
+name: Build Flatpak
+
+on:
+  pull_request:
+    paths:
+      - 'packaging/flatpak/**'
+      - 'src/**'
+      - 'pyproject.toml'
+  push:
+    branches:
+      - main
+      - distribution
+    paths:
+      - 'packaging/flatpak/**'
+      - 'src/**'
+      - 'pyproject.toml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and Test Flatpak
+    runs-on: ubuntu-latest
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:freedesktop-23.08
+      options: --privileged
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: jotta-tray.flatpak
+          manifest-path: packaging/flatpak/io.github.oal.jotta_tray.yml
+          cache-key: flatpak-builder-${{ github.sha }}
+
+      - name: Upload Flatpak bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: jotta-tray-flatpak
+          path: jotta-tray.flatpak
+          retention-days: 30
+
+  validate:
+    name: Validate Metadata
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak appstream-util desktop-file-utils
+
+      - name: Validate AppStream metadata
+        run: |
+          appstream-util validate-relax packaging/flatpak/io.github.oal.jotta_tray.metainfo.xml
+
+      - name: Validate Desktop file
+        run: |
+          desktop-file-validate src/jotta_tray/jotta-tray.desktop || true
+
+      - name: Check manifest syntax
+        run: |
+          python3 -c "import yaml; yaml.safe_load(open('packaging/flatpak/io.github.oal.jotta_tray.yml'))"

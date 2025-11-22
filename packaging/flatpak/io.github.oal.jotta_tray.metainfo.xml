@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.oal.jotta_tray</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Jotta Tray</name>
+  <summary>System tray widget for monitoring Jotta Cloud sync status</summary>
+
+  <description>
+    <p>
+      Jotta Tray is a lightweight system tray widget for Linux that provides at-a-glance
+      monitoring of Jotta Cloud sync status, storage usage, and quick access to common actions.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Real-time sync status monitoring</li>
+      <li>Storage quota display</li>
+      <li>Quick actions menu (pause/resume, open web, view logs)</li>
+      <li>Desktop notifications for important events</li>
+      <li>Works with GNOME, KDE, XFCE, and other desktop environments</li>
+    </ul>
+    <p>
+      Note: This application requires jotta-cli (the official Jotta Cloud command-line tool)
+      to be installed and configured on your system.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">io.github.oal.jotta_tray.desktop</launchable>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Jotta Tray in system tray</caption>
+      <!-- TODO: Add screenshot URL when available -->
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/oal/jotta_tray</url>
+  <url type="bugtracker">https://github.com/oal/jotta_tray/issues</url>
+  <url type="vcs-browser">https://github.com/oal/jotta_tray</url>
+
+  <developer id="io.github.oal">
+    <name>oal</name>
+  </developer>
+
+  <categories>
+    <category>Utility</category>
+    <category>System</category>
+  </categories>
+
+  <keywords>
+    <keyword>jotta</keyword>
+    <keyword>jottacloud</keyword>
+    <keyword>cloud</keyword>
+    <keyword>sync</keyword>
+    <keyword>backup</keyword>
+    <keyword>tray</keyword>
+    <keyword>indicator</keyword>
+  </keywords>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+
+  <recommends>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </recommends>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+    <release version="0.1.0" date="2025-01-01">
+      <description>
+        <p>Initial release</p>
+        <ul>
+          <li>Real-time sync status monitoring</li>
+          <li>Storage quota display</li>
+          <li>Quick actions menu</li>
+          <li>Desktop notifications</li>
+          <li>Autostart on login support</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+</component>

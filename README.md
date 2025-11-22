@@ -23,7 +23,64 @@ A lightweight system tray widget for Linux that provides at-a-glance monitoring 
 
 ## Installation
 
-### Prerequisites
+Choose the installation method that works best for your system:
+
+### 🚀 Quick Install (Recommended)
+
+#### via pipx (All Linux distributions)
+
+```bash
+# Install pipx if you don't have it
+sudo apt install pipx  # Ubuntu/Debian
+# or
+sudo dnf install pipx  # Fedora
+# or
+sudo pacman -S python-pipx  # Arch
+
+# Install jotta-tray
+pipx install jotta-tray
+```
+
+**Note:** You'll need to install system dependencies separately (see [Prerequisites](#prerequisites) below).
+
+#### via AUR (Arch Linux & Manjaro)
+
+```bash
+# Using yay
+yay -S jotta-tray
+
+# Or using paru
+paru -S jotta-tray
+```
+
+This automatically installs all system dependencies.
+
+#### via Flatpak (Universal)
+
+```bash
+flatpak install flathub io.github.oal.jotta_tray
+```
+
+This is the easiest method as all dependencies are bundled.
+
+### 📦 Other Installation Methods
+
+<details>
+<summary><b>From PyPI with pip</b></summary>
+
+```bash
+# Install system dependencies first (see Prerequisites below)
+
+# Install using pip
+pip install --user jotta-tray
+
+# Or system-wide (not recommended)
+sudo pip install jotta-tray
+```
+</details>
+
+<details>
+<summary><b>From source (for development)</b></summary>
 
 This project uses [uv](https://docs.astral.sh/uv/) for dependency management. Install it first:
 
@@ -31,10 +88,12 @@ This project uses [uv](https://docs.astral.sh/uv/) for dependency management. In
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### Option 1: Install from source (uv - recommended)
+Then clone and install:
 
 ```bash
-# Clone or download this repository
+# Clone the repository
+git clone https://github.com/oal/jotta_tray.git
+cd jotta_tray
 
 # Install in development mode with dev dependencies
 uv sync --dev
@@ -42,30 +101,28 @@ uv sync --dev
 # Or install in production mode
 uv sync
 ```
+</details>
 
-### Option 2: Install with pip
+### Prerequisites
 
-```bash
-# Install in development mode
-uv pip install -e .
+**All installation methods require:**
 
-# Or install normally
-uv pip install .
-```
+1. **jotta-cli** - The official Jotta Cloud command-line tool
+   - Download from [jottacloud.com](https://www.jottacloud.com/downloads)
+   - Must be configured and logged in before using jotta-tray
 
-### Option 3: Manual system dependencies
+2. **System dependencies** (automatically installed by AUR and Flatpak):
 
-```bash
-# Install system GTK dependencies first
-sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-appindicator3-0.1  # Ubuntu/Debian
-# or
-sudo dnf install python3-gobject gtk3 libappindicator-gtk3  # Fedora
-# or
-sudo pacman -S python-gobject gtk3 libappindicator  # Arch Linux
+   ```bash
+   # Ubuntu/Debian
+   sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-appindicator3-0.1
 
-# Then install Python package with uv
-uv sync
-```
+   # Fedora
+   sudo dnf install python3-gobject gtk3 libappindicator-gtk3
+
+   # Arch Linux (if not using AUR)
+   sudo pacman -S python-gobject gtk3 libappindicator-gtk3
+   ```
 
 ## Usage
 

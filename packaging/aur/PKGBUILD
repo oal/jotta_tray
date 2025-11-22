@@ -1,0 +1,45 @@
+# Maintainer: Your Name <your.email@example.com>
+pkgname=jotta-tray
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="System tray widget for monitoring Jotta Cloud sync status on Linux"
+arch=('any')
+url="https://github.com/oal/jotta_tray"
+license=('MIT')
+depends=(
+    'python>=3.10'
+    'python-gobject'
+    'gtk3'
+    'libappindicator-gtk3'
+    'jotta-cli'  # External dependency - user must install separately
+)
+makedepends=(
+    'python-build'
+    'python-installer'
+    'python-wheel'
+    'python-hatchling'
+)
+optdepends=(
+    'gnome-shell-extension-appindicator: For GNOME desktop support'
+)
+source=("https://files.pythonhosted.org/packages/source/${pkgname::1}/$pkgname/$pkgname-$pkgver.tar.gz")
+sha256sums=('SKIP')  # Will be updated by automated workflow
+
+build() {
+    cd "$pkgname-$pkgver"
+    python -m build --wheel --no-isolation
+}
+
+package() {
+    cd "$pkgname-$pkgver"
+    python -m installer --destdir="$pkgdir" dist/*.whl
+
+    # Install license
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+
+    # Install desktop file if it exists
+    if [ -f "src/jotta_tray/jotta-tray.desktop" ]; then
+        install -Dm644 "src/jotta_tray/jotta-tray.desktop" \
+            "$pkgdir/usr/share/applications/jotta-tray.desktop"
+    fi
+}

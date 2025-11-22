@@ -1,0 +1,116 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g., v0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.tag }}"
+          else
+            VERSION="${{ github.ref_name }}"
+          fi
+          VERSION=${VERSION#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            # First release, get all commits
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --reverse)
+          else
+            # Get commits since previous tag
+            COMMITS=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --reverse)
+          fi
+
+          # Create changelog file
+          cat > CHANGELOG.md <<EOF
+          # What's Changed
+
+          ${COMMITS}
+
+          ## Installation
+
+          ### via pipx (Recommended)
+          \`\`\`bash
+          pipx install jotta-tray
+          \`\`\`
+
+          ### via AUR (Arch Linux)
+          \`\`\`bash
+          yay -S jotta-tray
+          \`\`\`
+
+          ### via Flatpak
+          \`\`\`bash
+          flatpak install flathub io.github.oal.jotta_tray
+          \`\`\`
+
+          ### via pip
+          \`\`\`bash
+          pip install --user jotta-tray
+          \`\`\`
+
+          **Note:** All installation methods require \`jotta-cli\` to be installed separately.
+
+          ## Full Changelog
+          https://github.com/${{ github.repository }}/compare/${PREV_TAG}...v${{ steps.version.outputs.version }}
+          EOF
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, 'rc') || contains(steps.version.outputs.version, 'alpha') || contains(steps.version.outputs.version, 'beta') }}
+          generate_release_notes: true
+
+      - name: Create summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          # Release v${{ steps.version.outputs.version }} Created ✅
+
+          The release has been published and will trigger automated distribution updates:
+
+          - 📦 **PyPI**: Automatic publish workflow will start
+          - 🏗️ **AUR**: Package update workflow will start
+          - 📦 **Flatpak**: Build available as artifact
+
+          ## Next Steps
+
+          1. Monitor the PyPI publish workflow
+          2. Verify AUR package was updated
+          3. Submit Flatpak to Flathub (if not already automated)
+
+          [View Release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }})
+          EOF

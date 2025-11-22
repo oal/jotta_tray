@@ -1,0 +1,106 @@
+name: Update AUR Package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  update-aur:
+    name: Update AUR PKGBUILD
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION=$(git describe --tags --abbrev=0)
+          fi
+          VERSION=${VERSION#v}  # Remove 'v' prefix
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Download source tarball and calculate checksum
+        id: checksum
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          URL="https://files.pythonhosted.org/packages/source/j/jotta-tray/jotta-tray-${VERSION}.tar.gz"
+
+          # Wait a bit for PyPI to process the upload
+          sleep 30
+
+          # Download and calculate SHA256
+          wget -q "$URL" -O source.tar.gz
+          SHA256=$(sha256sum source.tar.gz | awk '{print $1}')
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          echo "SHA256: $SHA256"
+
+      - name: Update PKGBUILD
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA256="${{ steps.checksum.outputs.sha256 }}"
+
+          cd packaging/aur
+
+          # Update version
+          sed -i "s/^pkgver=.*/pkgver=$VERSION/" PKGBUILD
+
+          # Reset pkgrel to 1 for new version
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+
+          # Update checksum
+          sed -i "s/^sha256sums=.*/sha256sums=('$SHA256')/" PKGBUILD
+
+          # Generate .SRCINFO
+          docker run --rm -v "$PWD:/pkg" archlinux:latest bash -c "
+            pacman -Syu --noconfirm base-devel
+            useradd -m builder
+            chown -R builder:builder /pkg
+            cd /pkg
+            su builder -c 'makepkg --printsrcinfo > .SRCINFO'
+          "
+
+      - name: Checkout AUR repository
+        uses: actions/checkout@v4
+        with:
+          repository: aur/jotta-tray
+          path: aur-repo
+          ssh-key: ${{ secrets.AUR_SSH_KEY }}
+
+      - name: Update AUR repository
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Copy updated files
+          cp packaging/aur/PKGBUILD aur-repo/
+          cp packaging/aur/.SRCINFO aur-repo/
+
+          cd aur-repo
+
+          # Configure git
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          # Commit and push
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to version $VERSION"
+          git push
+
+      - name: Create summary
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          # AUR Package Updated ✅
+
+          - **Version:** $VERSION
+          - **SHA256:** ${{ steps.checksum.outputs.sha256 }}
+          - **AUR URL:** https://aur.archlinux.org/packages/jotta-tray
+
+          The AUR package has been automatically updated.
+          EOF
