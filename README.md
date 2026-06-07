@@ -53,7 +53,17 @@ uv pip install -e .
 uv pip install .
 ```
 
-### Option 3: Manual system dependencies
+### Option 3: Global install (uv tool)
+
+Install the `jotta-tray` command globally so it's available without activating a virtual environment:
+
+```bash
+uv tool install -e .
+```
+
+This places the command in uv's tools directory (typically `~/.local/bin/`), which should be on your `PATH`. Re-run this command to update after code changes.
+
+### Option 4: Manual system dependencies
 
 ```bash
 # Install system GTK dependencies first
