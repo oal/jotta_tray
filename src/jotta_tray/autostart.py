@@ -6,6 +6,8 @@ Handles XDG autostart desktop file installation/removal.
 
 import logging
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 from typing import Tuple
 
@@ -71,11 +73,80 @@ def is_autostart_enabled() -> bool:
     return get_autostart_file_path().exists()
 
 
+def _resolve_exec_path() -> str:
+    """
+    Resolve the absolute path to the jotta-tray executable.
+
+    Tries multiple strategies to find a reliable absolute path that will work
+    in an XDG autostart environment (which may have a minimal PATH):
+
+    1. ``shutil.which()`` — works if the install location is on PATH.
+    2. **uv tool install** — check ``~/.local/bin/jotta-tray`` explicitly
+       (the default target of ``uv tool install``).
+    3. **pip editable / venv** — look next to the running interpreter
+       (``.venv/bin/jotta-tray``).
+
+    Falls back to the bare command name (``jotta-tray``) if nothing resolves.
+
+    Returns:
+        Absolute path to the executable, or ``"jotta-tray"`` as a last resort.
+    """
+    # Strategy 1: standard which lookup
+    found = shutil.which("jotta-tray")
+    if found:
+        logger.debug(f"Resolved jotta-tray via shutil.which: {found}")
+        return found
+
+    # Strategy 2: uv tool install default location
+    uv_tool_path = Path.home() / ".local" / "bin" / "jotta-tray"
+    if uv_tool_path.exists():
+        logger.debug(f"Resolved jotta-tray via uv tool path: {uv_tool_path}")
+        return str(uv_tool_path)
+
+    # Strategy 3: pip editable / venv — executable sits next to the interpreter
+    venv_bin = Path(sys.executable).parent / "jotta-tray"
+    if venv_bin.exists():
+        logger.debug(f"Resolved jotta-tray via venv bin: {venv_bin}")
+        return str(venv_bin)
+
+    # Strategy 4: try to discover the entry-point script via site-packages metadata
+    #    pip installs create a console-script wrapper whose shebang points into the
+    #    right virtualenv.  We can probe the package metadata for the entry point.
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "show", "jotta-tray"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0:
+            # pip show doesn't give us the script path directly, but if we got
+            # here the venv strategy already covered the common case.
+            pass
+    except Exception:
+        pass
+
+    logger.warning("Could not resolve absolute path for jotta-tray; falling back to bare command name")
+    return "jotta-tray"
+
+
+def _inject_exec_path(content: str, exec_path: str) -> str:
+    """Replace the Exec= line in a desktop-file template."""
+    lines = content.splitlines(keepends=True)
+    updated = []
+    for line in lines:
+        if line.startswith("Exec="):
+            updated.append(f"Exec={exec_path}\n")
+        else:
+            updated.append(line)
+    return "".join(updated)
+
+
 def install_autostart() -> Tuple[bool, str]:
     """
     Install the autostart desktop file.
 
-    Copies the desktop file template to ~/.config/autostart/
+    Reads the bundled desktop-file template, resolves the absolute path to the
+    ``jotta-tray`` executable, injects it into the ``Exec=`` line, and writes
+    the result to ``~/.config/autostart/``.
 
     Returns:
         Tuple of (success: bool, message: str)
@@ -90,8 +161,14 @@ def install_autostart() -> Tuple[bool, str]:
         autostart_dir.mkdir(parents=True, exist_ok=True)
         logger.debug(f"Autostart directory: {autostart_dir}")
 
-        # Copy desktop file
-        shutil.copy2(source, dest)
+        # Resolve absolute path to the executable
+        exec_path = _resolve_exec_path()
+        logger.info(f"Using Exec path: {exec_path}")
+
+        # Read template, inject Exec path, and write
+        template = source.read_text()
+        content = _inject_exec_path(template, exec_path)
+        dest.write_text(content)
         logger.info(f"Installed autostart file to {dest}")
 
         return True, f"Autostart enabled successfully.\nDesktop file installed to:\n{dest}"
